@@ -67,7 +67,8 @@ export default function App() {
               {currentTab === 'KNOWLEDGE' && <KnowledgeTab />}
               {currentTab === 'NEWS' && <NewsSummaryTab />}
               {currentTab === 'PROFILE' && <ProfileTab />}
-              {currentTab === 'ADMIN' && <AdminPortal />}
+              {/* All admin tabs route to AdminPortal — it self-guards with isAdmin */}
+              {currentTab.startsWith('ADMIN') && <AdminPortal />}
             </div>
           </div>
         </div>
