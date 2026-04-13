@@ -1,0 +1,5 @@
+{
+  "name": "OLQ Engine - SSB Assessment System",
+  "description": "AI-powered psychological assessment tool for analyzing WAT, TAT, and SRT responses using pattern-based logic for SSB preparation.",
+  "requestFramePermissions": []
+}

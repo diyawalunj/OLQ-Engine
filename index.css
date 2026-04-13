@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Michroma&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Michroma", sans-serif;
+  --color-olq-bg: #0c0e0c;
+  --color-olq-card: #141814;
+  --color-olq-gold: #c5a059;
+  --color-olq-green: #848d62;
+  --color-olq-olive: #3d441e;
+  --color-olq-border: #242b24;
+}
+
+@layer base {
+  body {
+    @apply bg-olq-bg text-gray-300 font-sans;
+  }
+}
+
+@media print {
+  @page {
+    margin: 20mm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure background colors and gradients print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .bg-olq-card {
+    background: #f8f8f8 !important;
+    border: 1px solid #ddd !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+
+  .bg-olq-bg {
+    background: white !important;
+  }
+
+  .text-white {
+    color: black !important;
+  }
+
+  .text-olq-gold {
+    color: #8b6b23 !important; /* Darker gold for better contrast on white paper */
+  }
+
+  .text-gray-300, .text-gray-400, .text-gray-500, .text-gray-600 {
+    color: #444 !important;
+  }
+
+  .border-olq-border {
+    border-color: #ddd !important;
+  }
+
+  /* Layout adjustments for print */
+  main {
+    padding: 0 !important;
+    display: block !important;
+    max-width: 100% !important;
+  }
+
+  .w-\[400px\] {
+    display: none !important; /* Hide input panel */
+  }
+
+  .flex-1 {
+    width: 100% !important;
+  }
+
+  /* Ensure cards don't break across pages if possible */
+  .bg-olq-card {
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+}
