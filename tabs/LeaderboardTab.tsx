@@ -5,16 +5,16 @@ import { useGamificationStore } from '../stores/gamificationStore';
 
 // Mock leaderboard data (in production — from Firestore aggregate)
 const MOCK_LEADERBOARD = [
-  { rank: 1, name: 'Vikram S.', entry: 'NDA', xp: 8750, level: 'Commandant', streak: 42, score: 8.9 },
-  { rank: 2, name: 'Priya K.', entry: 'CDS', xp: 7200, level: 'Brigadier', streak: 38, score: 8.5 },
-  { rank: 3, name: 'Arjun M.', entry: 'NDA', xp: 6100, level: 'Brigadier', streak: 29, score: 8.2 },
-  { rank: 4, name: 'Sneha R.', entry: 'AFCAT', xp: 5400, level: 'Colonel', streak: 25, score: 7.9 },
-  { rank: 5, name: 'Rahul D.', entry: 'CDS', xp: 4800, level: 'Colonel', streak: 21, score: 7.6 },
-  { rank: 6, name: 'Ananya P.', entry: 'TES', xp: 3900, level: 'Major', streak: 18, score: 7.3 },
-  { rank: 7, name: 'Karan J.', entry: 'NDA', xp: 3200, level: 'Major', streak: 14, score: 7.0 },
-  { rank: 8, name: 'Meera B.', entry: 'AFCAT', xp: 2800, level: 'Captain', streak: 12, score: 6.8 },
-  { rank: 9, name: 'Rohan T.', entry: 'CDS', xp: 2100, level: 'Captain', streak: 9, score: 6.5 },
-  { rank: 10, name: 'Divya N.', entry: 'NDA', xp: 1500, level: 'Officer', streak: 7, score: 6.2 },
+  { rank: 1, name: 'Vikram S.', entry: 'NDA', xp: 8750, streak: 42, score: 8.9 },
+  { rank: 2, name: 'Priya K.', entry: 'CDS', xp: 7200, streak: 38, score: 8.5 },
+  { rank: 3, name: 'Arjun M.', entry: 'NDA', xp: 6100, streak: 29, score: 8.2 },
+  { rank: 4, name: 'Sneha R.', entry: 'AFCAT', xp: 5400, streak: 25, score: 7.9 },
+  { rank: 5, name: 'Rahul D.', entry: 'CDS', xp: 4800, streak: 21, score: 7.6 },
+  { rank: 6, name: 'Ananya P.', entry: 'TES', xp: 3900, streak: 18, score: 7.3 },
+  { rank: 7, name: 'Karan J.', entry: 'NDA', xp: 3200, streak: 14, score: 7.0 },
+  { rank: 8, name: 'Meera B.', entry: 'AFCAT', xp: 2800, streak: 12, score: 6.8 },
+  { rank: 9, name: 'Rohan T.', entry: 'CDS', xp: 2100, streak: 9, score: 6.5 },
+  { rank: 10, name: 'Divya N.', entry: 'NDA', xp: 1500, streak: 7, score: 6.2 },
 ];
 
 const getRankIcon = (rank: number) => {
@@ -60,13 +60,12 @@ export default function LeaderboardTab() {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table — Level column removed */}
       <div className="bg-olq-card border border-olq-border rounded-xl overflow-hidden shadow-lg">
-        <div className="grid grid-cols-[60px_1fr_80px_80px_80px_80px] gap-0 border-b border-olq-border px-4 py-3 bg-olq-bg/50">
+        <div className="grid grid-cols-[60px_1fr_80px_80px_80px] gap-0 border-b border-olq-border px-4 py-3 bg-olq-bg/50">
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">#</span>
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Candidate</span>
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center">XP</span>
-          <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center">Level</span>
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center">Streak</span>
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest text-center">Score</span>
         </div>
@@ -75,7 +74,7 @@ export default function LeaderboardTab() {
           <div
             key={entry.rank}
             className={cn(
-              "grid grid-cols-[60px_1fr_80px_80px_80px_80px] gap-0 items-center px-4 py-3 border-b border-olq-border/50 last:border-0 hover:bg-olq-bg/30 transition-colors",
+              "grid grid-cols-[60px_1fr_80px_80px_80px] gap-0 items-center px-4 py-3 border-b border-olq-border/50 last:border-0 hover:bg-olq-bg/30 transition-colors",
               entry.rank <= 3 && "bg-olq-gold/[0.02]"
             )}
           >
@@ -89,8 +88,6 @@ export default function LeaderboardTab() {
             </div>
 
             <span className="text-xs font-mono text-olq-gold text-center">{entry.xp.toLocaleString()}</span>
-
-            <span className="text-[10px] font-bold text-gray-300 text-center uppercase tracking-wider">{entry.level}</span>
 
             <div className="flex items-center justify-center gap-1">
               <TrendingUp className="w-3 h-3 text-orange-500" />

@@ -3,7 +3,7 @@ import { useAuthStore } from '../stores/authStore';
 import { 
   Shield, LayoutDashboard, BrainCircuit, PenTool, User as UserIcon, 
   LogOut, Settings, Map, Brain, Image, FileText, Users, Trophy, BookOpen,
-  ChevronDown, Menu, X
+  Menu, X, Newspaper, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { cn } from '../utils';
 import XPBar from './XPBar';
@@ -13,197 +13,201 @@ interface HeaderProps {
   setTab: (tab: string) => void;
 }
 
-const PRACTICE_TABS = [
-  { id: 'MANUAL', label: 'WAT/TAT/SRT', icon: PenTool },
-  { id: 'OIR', label: 'OIR Test', icon: Brain },
-  { id: 'PPDT', label: 'PPDT', icon: Image },
-  { id: 'SDT', label: 'SDT', icon: FileText },
-  { id: 'GTO', label: 'GTO Tasks', icon: Users },
-  { id: 'AI_PRACTICE', label: 'AI Analysis', icon: BrainCircuit },
+const NAV_SECTIONS = [
+  {
+    title: 'Command',
+    items: [
+      { id: 'ROADMAP', label: 'Roadmap', icon: Map },
+      { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: 'Practice',
+    items: [
+      { id: 'MANUAL', label: 'WAT / TAT / SRT', icon: PenTool },
+      { id: 'OIR', label: 'OIR Test', icon: Brain },
+      { id: 'PPDT', label: 'PPDT', icon: Image },
+      { id: 'SDT', label: 'SDT', icon: FileText },
+      { id: 'GTO', label: 'GTO Tasks', icon: Users },
+    ],
+  },
+  {
+    title: 'Intelligence',
+    items: [
+      { id: 'AI_PRACTICE', label: 'AI Analysis', icon: BrainCircuit },
+    ],
+  },
+  {
+    title: 'Resources',
+    items: [
+      { id: 'NEWS', label: 'Daily News', icon: Newspaper },
+      { id: 'KNOWLEDGE', label: 'Knowledge Hub', icon: BookOpen },
+      { id: 'LEADERBOARD', label: 'Ranks', icon: Trophy },
+    ],
+  },
+  {
+    title: 'Account',
+    items: [
+      { id: 'PROFILE', label: 'Profile', icon: UserIcon },
+    ],
+  },
 ];
+
+const PROTECTED_TABS = ['ROADMAP', 'DASHBOARD', 'AI_PRACTICE', 'PROFILE', 'ADMIN', 'MANUAL', 'OIR', 'PPDT', 'SDT', 'GTO'];
 
 export default function Header({ currentTab, setTab }: HeaderProps) {
   const { user, logout } = useAuthStore();
-  const [showPracticeMenu, setShowPracticeMenu] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isPracticeTab = PRACTICE_TABS.some(t => t.id === currentTab);
-
-  const MAIN_TABS = [
-    { id: 'ROADMAP', label: 'Roadmap', icon: Map },
-    { id: 'PRACTICE_MENU', label: 'Practice', icon: PenTool, isMenu: true },
-    { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'LEADERBOARD', label: 'Ranks', icon: Trophy },
-    { id: 'KNOWLEDGE', label: 'Knowledge', icon: BookOpen },
-    { id: 'PROFILE', label: 'Profile', icon: UserIcon },
-  ];
-
-  if (user?.isAdmin) {
-    MAIN_TABS.push({ id: 'ADMIN', label: 'Admin', icon: Settings });
-  }
+  const allSections = user?.isAdmin
+    ? [...NAV_SECTIONS, { title: 'Admin', items: [{ id: 'ADMIN', label: 'Admin Portal', icon: Settings }] }]
+    : NAV_SECTIONS;
 
   const handleTabClick = (tabId: string) => {
-    if (!user && tabId !== 'ROADMAP' && tabId !== 'KNOWLEDGE' && tabId !== 'PRACTICE_MENU') {
-      useAuthStore.getState().setShowAuthModal(true);
-      return;
-    }
-    if (tabId === 'PRACTICE_MENU') {
-      setShowPracticeMenu(!showPracticeMenu);
-      return;
-    }
-    setTab(tabId);
-    setShowPracticeMenu(false);
-    setShowMobileMenu(false);
-  };
-
-  const handlePracticeSelect = (tabId: string) => {
-    if (!user) {
+    if (!user && PROTECTED_TABS.includes(tabId)) {
       useAuthStore.getState().setShowAuthModal(true);
       return;
     }
     setTab(tabId);
-    setShowPracticeMenu(false);
-    setShowMobileMenu(false);
+    setMobileOpen(false);
   };
 
-  return (
-    <header className="border-b border-olq-border bg-olq-bg/80 backdrop-blur-md sticky top-0 z-50 print:hidden shadow-xl">
-      <div className="flex items-center justify-between px-4 sm:px-8 py-3">
-        {/* Logo */}
-        <div className="flex items-center gap-4 shrink-0">
-          <div className="w-10 h-10 bg-olq-olive rounded-lg flex items-center justify-center border border-olq-gold/20 shadow-[0_0_15px_rgba(61,68,30,0.5)]">
-            <Shield className="text-olq-gold w-6 h-6" />
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="text-sm font-bold tracking-wider text-white uppercase font-display">SSB Engine</h1>
-            <p className="text-[8px] text-olq-gold/60 font-bold tracking-[0.3em] uppercase font-display">Command Center</p>
-          </div>
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <div className={cn("flex items-center gap-3 px-4 py-5 border-b border-olq-border", collapsed && "justify-center px-2")}>
+        <div className="w-9 h-9 bg-olq-olive rounded-lg flex items-center justify-center border border-olq-gold/20 shadow-[0_0_15px_rgba(61,68,30,0.5)] shrink-0">
+          <Shield className="text-olq-gold w-5 h-5" />
         </div>
-
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-1 relative">
-          {MAIN_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = tab.id === 'PRACTICE_MENU' ? isPracticeTab : currentTab === tab.id;
-            return (
-              <div key={tab.id} className="relative">
-                <button
-                  onClick={() => handleTabClick(tab.id)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all font-display whitespace-nowrap",
-                    isActive 
-                      ? "bg-olq-gold/10 text-olq-gold border border-olq-gold/30 shadow-[0_0_15px_rgba(197,160,89,0.2)]" 
-                      : "text-gray-500 hover:text-white hover:bg-olq-card border border-transparent"
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span>{tab.label}</span>
-                  {tab.id === 'PRACTICE_MENU' && <ChevronDown className={cn("w-3 h-3 transition-transform", showPracticeMenu && "rotate-180")} />}
-                </button>
-
-                {/* Practice Dropdown */}
-                {tab.id === 'PRACTICE_MENU' && showPracticeMenu && (
-                  <div className="absolute top-full left-0 mt-2 w-56 bg-olq-card border border-olq-border rounded-xl overflow-hidden shadow-2xl z-50">
-                    {PRACTICE_TABS.map((pt) => {
-                      const PIcon = pt.icon;
-                      return (
-                        <button
-                          key={pt.id}
-                          onClick={() => handlePracticeSelect(pt.id)}
-                          className={cn(
-                            "w-full px-4 py-3 text-left hover:bg-olq-gold/10 transition-colors flex items-center gap-3",
-                            currentTab === pt.id && "bg-olq-gold/5 text-olq-gold"
-                          )}
-                        >
-                          <PIcon className="w-4 h-4 text-olq-gold/60" />
-                          <div>
-                            <span className="text-xs font-bold text-white block">{pt.label}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </nav>
-
-        {/* Right Section */}
-        <div className="flex items-center gap-3 shrink-0">
-          {user && <XPBar />}
-
-          {user && (
-            <div className="hidden sm:block text-right">
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.2em] block font-display">Logged In</span>
-              <span className="text-xs font-mono text-olq-gold">{user?.email || 'Admin'}</span>
-            </div>
-          )}
-
-          {user && (
-            <button 
-              onClick={logout}
-              className="p-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="lg:hidden p-2 rounded-xl bg-olq-card border border-olq-border text-gray-400 hover:text-white transition-colors"
-          >
-            {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
+        {!collapsed && (
+          <div className="min-w-0">
+            <h1 className="text-xs font-bold tracking-wider text-white uppercase font-display truncate">SSB Engine</h1>
+            <p className="text-[7px] text-olq-gold/60 font-bold tracking-[0.2em] uppercase font-display">Command Center</p>
+          </div>
+        )}
       </div>
 
-      {/* Mobile Menu */}
-      {showMobileMenu && (
-        <div className="lg:hidden border-t border-olq-border bg-olq-card px-4 py-4 space-y-1">
-          {MAIN_TABS.filter(t => t.id !== 'PRACTICE_MENU').map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
-                  currentTab === tab.id ? "bg-olq-gold/10 text-olq-gold" : "text-gray-400 hover:text-white hover:bg-olq-bg"
-                )}
-              >
-                <Icon className="w-4 h-4" /> {tab.label}
-              </button>
-            );
-          })}
+      {/* XP Bar (when expanded) */}
+      {user && !collapsed && (
+        <div className="px-4 py-3 border-b border-olq-border">
+          <XPBar />
+        </div>
+      )}
 
-          <div className="border-t border-olq-border pt-2 mt-2">
-            <p className="text-[9px] font-bold text-gray-600 uppercase tracking-widest px-4 mb-2">Practice Modules</p>
-            {PRACTICE_TABS.map((pt) => {
-              const PIcon = pt.icon;
+      {/* Nav Sections */}
+      <nav className="flex-1 py-3 overflow-y-auto space-y-1">
+        {allSections.map((section) => (
+          <div key={section.title} className="mb-2">
+            {!collapsed && (
+              <p className="px-4 py-1.5 text-[8px] font-bold text-gray-600 uppercase tracking-[0.2em] font-display">
+                {section.title}
+              </p>
+            )}
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
               return (
                 <button
-                  key={pt.id}
-                  onClick={() => handlePracticeSelect(pt.id)}
+                  key={item.id}
+                  onClick={() => handleTabClick(item.id)}
+                  title={collapsed ? item.label : undefined}
                   className={cn(
-                    "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all",
-                    currentTab === pt.id ? "bg-olq-gold/10 text-olq-gold" : "text-gray-500 hover:text-white hover:bg-olq-bg"
+                    "flex items-center gap-3 w-full transition-all duration-200 rounded-lg mx-auto",
+                    collapsed ? "justify-center p-2.5 mx-1 my-0.5" : "px-4 py-2.5 mx-2",
+                    isActive
+                      ? "bg-olq-gold/10 text-olq-gold border-r-2 border-olq-gold"
+                      : "text-gray-500 hover:text-white hover:bg-olq-card"
                   )}
                 >
-                  <PIcon className="w-3.5 h-3.5" /> {pt.label}
+                  <Icon className={cn("shrink-0", collapsed ? "w-5 h-5" : "w-4 h-4")} />
+                  {!collapsed && (
+                    <span className="text-[11px] font-bold uppercase tracking-widest font-display truncate">{item.label}</span>
+                  )}
                 </button>
               );
             })}
           </div>
+        ))}
+      </nav>
+
+      {/* Footer: user & logout */}
+      <div className={cn("border-t border-olq-border px-3 py-3", collapsed && "px-1")}>
+        {user && !collapsed && (
+          <div className="flex items-center gap-2 px-2 pb-2">
+            <div className="w-7 h-7 rounded-full bg-olq-gold/10 border border-olq-gold/20 flex items-center justify-center shrink-0">
+              <UserIcon className="w-3.5 h-3.5 text-olq-gold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-mono text-olq-gold truncate">{user.email || 'User'}</p>
+            </div>
+          </div>
+        )}
+        {user && (
+          <button
+            onClick={logout}
+            className={cn(
+              "flex items-center gap-2 w-full rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all",
+              collapsed ? "justify-center p-2.5" : "px-3 py-2"
+            )}
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!collapsed && <span className="text-[10px] font-bold uppercase tracking-widest font-display">Sign Out</span>}
+          </button>
+        )}
+      </div>
+
+      {/* Collapse Toggle (desktop) */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="hidden lg:flex items-center justify-center w-full py-2 border-t border-olq-border text-gray-600 hover:text-white transition-colors"
+      >
+        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+      </button>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Top Bar */}
+      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-olq-bg/80 backdrop-blur-md border-b border-olq-border sticky top-0 z-50 print:hidden">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-olq-olive rounded-lg flex items-center justify-center border border-olq-gold/20">
+            <Shield className="text-olq-gold w-4 h-4" />
+          </div>
+          <span className="text-xs font-bold text-white uppercase tracking-wider font-display">SSB Engine</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {user && <XPBar />}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="p-2 rounded-lg bg-olq-card border border-olq-border text-gray-400 hover:text-white"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-64 bg-olq-bg border-r border-olq-border flex flex-col shadow-2xl z-50">
+            {sidebarContent}
+          </div>
         </div>
       )}
 
-      {/* Close practice menu on outside click */}
-      {showPracticeMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowPracticeMenu(false)} />
-      )}
-    </header>
+      {/* Desktop Left Sidebar */}
+      <aside
+        className={cn(
+          "hidden lg:flex flex-col fixed left-0 top-0 bottom-0 bg-olq-bg border-r border-olq-border z-40 print:hidden transition-all duration-300 shadow-xl",
+          collapsed ? "w-16" : "w-56"
+        )}
+      >
+        {sidebarContent}
+      </aside>
+    </>
   );
 }

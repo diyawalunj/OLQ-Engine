@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Map, Calendar, Target, Clock, Loader2, RefreshCw, CheckCircle2, Circle, Flame, Sparkles } from 'lucide-react';
+import { Map, Target, Clock, Loader2, RefreshCw, CheckCircle2, Circle, Flame, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../utils';
 import { useAuthStore } from '../stores/authStore';
@@ -31,10 +31,10 @@ export default function RoadmapTab() {
       }
 
       const data = await generateRoadmap(
-        profile.entryType,
-        profile.targetDate,
+        profile.entryTypes.join(', ') || 'General',
+        '',
         profile.selfAssessment,
-        profile.previousAttempts,
+        0,
         recentScores
       );
       setRoadmap(data);
@@ -59,9 +59,7 @@ export default function RoadmapTab() {
     setCompletedGoals(newSet);
   };
 
-  const daysUntil = profile?.targetDate
-    ? Math.max(0, Math.floor((new Date(profile.targetDate).getTime() - Date.now()) / 86400000))
-    : 0;
+  const ssbStageLabel = profile?.ssbStage || 'Unknown';
 
   const getGoals = (): RoadmapGoal[] => {
     if (!roadmap) return [];
@@ -79,8 +77,8 @@ export default function RoadmapTab() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
         <Map className="w-16 h-16 text-olq-gold/20" />
-        <h2 className="text-xl font-bold text-gray-400 uppercase tracking-widest font-display">Complete Onboarding First</h2>
-        <p className="text-sm text-gray-500 max-w-md">Set up your profile with entry type, target date, and self-assessment to unlock your personalized roadmap.</p>
+        <h2 className="text-xl font-bold text-gray-400 uppercase tracking-widest font-display">Complete PIQ Form First</h2>
+        <p className="text-sm text-gray-500 max-w-md">Fill out your Personal Information Questionnaire to unlock your personalized roadmap.</p>
       </div>
     );
   }
@@ -95,17 +93,14 @@ export default function RoadmapTab() {
             <Map className="w-6 h-6 text-olq-gold" /> Preparation Roadmap
           </h2>
           <p className="text-sm text-gray-400">
-            AI-generated plan for <span className="text-olq-gold font-bold">{profile.entryType}</span> preparation
+            AI-generated plan for <span className="text-olq-gold font-bold">{profile.entryTypes.join(' / ') || 'SSB'}</span> preparation
           </p>
         </div>
 
-        <div className="flex items-center gap-6 z-10">
+        <div className="flex items-center gap-4 z-10">
           <div className="text-center">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-display mb-1">Days Left</p>
-            <div className="flex items-end gap-1">
-              <span className="text-3xl font-bold font-mono text-white">{daysUntil}</span>
-              <Calendar className="w-4 h-4 text-olq-gold/60 mb-1" />
-            </div>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest font-display mb-1">Stage</p>
+            <span className="text-xs font-bold font-mono text-olq-gold capitalize">{ssbStageLabel.replace(/_/g, ' ')}</span>
           </div>
           <button onClick={fetchRoadmap} disabled={isLoading} className="p-3 rounded-xl bg-olq-bg border border-olq-border hover:border-olq-gold/30 transition-colors disabled:opacity-50">
             {isLoading ? <Loader2 className="w-4 h-4 text-olq-gold animate-spin" /> : <RefreshCw className="w-4 h-4 text-gray-400" />}

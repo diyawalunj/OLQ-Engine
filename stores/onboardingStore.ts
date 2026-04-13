@@ -3,12 +3,17 @@ import { db } from '../firebaseConfig';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export interface UserProfile {
-  entryType: 'NDA' | 'CDS' | 'AFCAT' | 'TES' | '';
-  previousAttempts: number;
-  conferenceStatus: 'none' | 'screened_out' | 'conference_out' | 'recommended';
-  targetDate: string; // ISO string
-  motivation: string;
-  selfAssessment: Record<string, number>; // OLQ name -> 1-10 rating
+  entryTypes: string[];
+  ssbStage: string;
+  age: string;
+  city: string;
+  education: string;
+  collegeName: string;
+  passoutYear: string;
+  isNCC: boolean;
+  struggleAreas: string[];
+  dailyHours: string;
+  selfAssessment: Record<string, number>;
   onboardingComplete: boolean;
   createdAt: string;
 }
@@ -35,12 +40,48 @@ export const OLQ_LIST = [
   'Determination',
 ] as const;
 
+export const ENTRY_TYPES = ['NDA', 'CDS', 'AFCAT', 'TES', 'NCC', 'Tech', 'Service Entry'] as const;
+
+export const SSB_STAGES = [
+  { id: 'beginner', label: 'Beginner' },
+  { id: 'intermediate', label: 'Intermediate' },
+  { id: 'appeared', label: 'Appeared Before' },
+  { id: 'recommended', label: 'Recommended Before' },
+  { id: 'reappearing_screened', label: 'Reappearing (Screened Out)' },
+  { id: 'reappearing_conference', label: 'Reappearing (Conference Out)' },
+] as const;
+
+export const EDUCATION_LEVELS = ['10th', '12th', 'Graduation', 'Masters'] as const;
+
+export const STRUGGLE_AREAS = [
+  'Communication',
+  'Time Management',
+  'Confidence',
+  'Consistency',
+  'Psychology',
+  'Interview',
+  'GTO Tasks',
+] as const;
+
+export const DAILY_HOURS_OPTIONS = [
+  '0-30 mins',
+  '1-2 hours',
+  '2-4 hours',
+  '4+ hours',
+  'Flexible',
+] as const;
+
 const DEFAULT_PROFILE: UserProfile = {
-  entryType: '',
-  previousAttempts: 0,
-  conferenceStatus: 'none',
-  targetDate: '',
-  motivation: '',
+  entryTypes: [],
+  ssbStage: '',
+  age: '',
+  city: '',
+  education: '',
+  collegeName: '',
+  passoutYear: '',
+  isNCC: false,
+  struggleAreas: [],
+  dailyHours: '',
   selfAssessment: Object.fromEntries(OLQ_LIST.map(olq => [olq, 5])),
   onboardingComplete: false,
   createdAt: new Date().toISOString(),

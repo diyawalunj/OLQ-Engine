@@ -1,47 +1,49 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, ChevronRight, ChevronLeft, Target, Calendar, CheckCircle2, Crosshair, Sparkles } from 'lucide-react';
-import { useOnboardingStore, OLQ_LIST, UserProfile } from '../stores/onboardingStore';
+import { Shield, ChevronRight, ChevronLeft, CheckCircle2, Crosshair, Sparkles, GraduationCap, MapPin, Clock, AlertTriangle, Users } from 'lucide-react';
+import { useOnboardingStore, OLQ_LIST, UserProfile, ENTRY_TYPES, SSB_STAGES, EDUCATION_LEVELS, STRUGGLE_AREAS, DAILY_HOURS_OPTIONS } from '../stores/onboardingStore';
 import { useAuthStore } from '../stores/authStore';
 import { cn } from '../utils';
-
-const ENTRY_TYPES = [
-  { id: 'NDA', title: 'NDA', subtitle: 'National Defence Academy', desc: '10+2 Entry for Army, Navy & Air Force' },
-  { id: 'CDS', title: 'CDS', subtitle: 'Combined Defence Services', desc: 'Graduate Entry for IMA, OTA, INA, AFA' },
-  { id: 'AFCAT', title: 'AFCAT', subtitle: 'Air Force Common Admission Test', desc: 'Graduate Entry for Indian Air Force' },
-  { id: 'TES', title: 'TES', subtitle: 'Technical Entry Scheme', desc: '10+2 Technical Entry for Indian Army' },
-] as const;
-
-const CONFERENCE_OPTIONS = [
-  { id: 'none', label: 'First Attempt' },
-  { id: 'screened_out', label: 'Screened Out (Day 1)' },
-  { id: 'conference_out', label: 'Conference Out' },
-  { id: 'recommended', label: 'Previously Recommended' },
-] as const;
 
 export default function OnboardingFlow() {
   const { user } = useAuthStore();
   const { saveProfile } = useOnboardingStore();
 
   const [step, setStep] = useState(0);
-  const [entryType, setEntryType] = useState<'NDA'|'CDS'|'AFCAT'|'TES'|''>('');
-  const [previousAttempts, setPreviousAttempts] = useState(0);
-  const [conferenceStatus, setConferenceStatus] = useState<'none'|'screened_out'|'conference_out'|'recommended'>('none');
-  const [targetDate, setTargetDate] = useState('');
-  const [motivation, setMotivation] = useState('');
+  const [entryTypes, setEntryTypes] = useState<string[]>([]);
+  const [ssbStage, setSsbStage] = useState('');
+  const [age, setAge] = useState('');
+  const [city, setCity] = useState('');
+  const [education, setEducation] = useState('');
+  const [collegeName, setCollegeName] = useState('');
+  const [passoutYear, setPassoutYear] = useState('');
+  const [isNCC, setIsNCC] = useState<boolean | null>(null);
+  const [struggleAreas, setStruggleAreas] = useState<string[]>([]);
+  const [dailyHours, setDailyHours] = useState('');
   const [selfAssessment, setSelfAssessment] = useState<Record<string, number>>(
     Object.fromEntries(OLQ_LIST.map(olq => [olq, 5]))
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  const totalSteps = 4;
+  const totalSteps = 7;
+
+  const toggleEntry = (entry: string) => {
+    setEntryTypes(prev => prev.includes(entry) ? prev.filter(e => e !== entry) : [...prev, entry]);
+  };
+
+  const toggleStruggle = (area: string) => {
+    setStruggleAreas(prev => prev.includes(area) ? prev.filter(a => a !== area) : [...prev, area]);
+  };
 
   const canProceed = () => {
     switch (step) {
-      case 0: return entryType !== '';
-      case 1: return true;
-      case 2: return targetDate !== '';
-      case 3: return true;
+      case 0: return entryTypes.length > 0;
+      case 1: return ssbStage !== '';
+      case 2: return age !== '' && city !== '';
+      case 3: return education !== '';
+      case 4: return isNCC !== null;
+      case 5: return struggleAreas.length > 0 && dailyHours !== '';
+      case 6: return true;
       default: return false;
     }
   };
@@ -51,11 +53,16 @@ export default function OnboardingFlow() {
     setIsSaving(true);
 
     const profile: UserProfile = {
-      entryType: entryType as any,
-      previousAttempts,
-      conferenceStatus,
-      targetDate,
-      motivation,
+      entryTypes,
+      ssbStage,
+      age,
+      city,
+      education,
+      collegeName,
+      passoutYear,
+      isNCC: isNCC ?? false,
+      struggleAreas,
+      dailyHours,
       selfAssessment,
       onboardingComplete: true,
       createdAt: new Date().toISOString(),
@@ -68,6 +75,12 @@ export default function OnboardingFlow() {
   return (
     <div className="min-h-screen bg-olq-bg flex items-center justify-center p-4 selection:bg-olq-gold/30">
       <div className="w-full max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <p className="text-[10px] font-bold text-olq-gold/60 uppercase tracking-[0.3em] font-display">SSB Command Center</p>
+          <h1 className="text-lg font-bold text-white uppercase tracking-wider font-display mt-1">Personal Information Questionnaire</h1>
+        </div>
+
         {/* Progress Bar */}
         <div className="flex items-center gap-2 mb-8">
           {Array.from({ length: totalSteps }).map((_, i) => (
@@ -75,7 +88,7 @@ export default function OnboardingFlow() {
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: i <= step ? '100%' : '0%' }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
+                transition={{ duration: 0.5, delay: i * 0.05 }}
                 className={cn(
                   "h-full rounded-full",
                   i < step ? "bg-olq-gold" : i === step ? "bg-olq-gold/60" : "bg-gray-800"
@@ -84,96 +97,259 @@ export default function OnboardingFlow() {
             </div>
           ))}
         </div>
+        <p className="text-center text-[10px] text-gray-600 mb-6 font-mono">Step {step + 1} of {totalSteps}</p>
 
         <AnimatePresence mode="wait">
-          {/* Step 0: Entry Type Selection */}
+          {/* Step 0: Entry Type Selection (Multi-select) */}
           {step === 0 && (
-            <motion.div
-              key="step0"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="space-y-8"
-            >
+            <motion.div key="step0" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
               <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-olq-olive rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20 shadow-[0_0_30px_rgba(61,68,30,0.5)]">
-                  <Shield className="text-olq-gold w-8 h-8" />
+                <div className="w-14 h-14 bg-olq-olive rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20 shadow-[0_0_30px_rgba(61,68,30,0.5)]">
+                  <Shield className="text-olq-gold w-7 h-7" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white uppercase tracking-wider font-display">Select Your Entry</h1>
-                <p className="text-sm text-gray-400">Choose your SSB entry pathway to personalize your preparation.</p>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">Select Your Entry</h2>
+                <p className="text-xs text-gray-400">Choose all applicable SSB entry pathways. <span className="text-olq-gold/60">(Multiple select)</span></p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {ENTRY_TYPES.map((entry) => (
                   <button
-                    key={entry.id}
-                    onClick={() => setEntryType(entry.id)}
+                    key={entry}
+                    onClick={() => toggleEntry(entry)}
                     className={cn(
-                      "p-6 rounded-xl border text-left transition-all duration-300 group",
-                      entryType === entry.id
-                        ? "bg-olq-gold/10 border-olq-gold/50 shadow-[0_0_25px_rgba(197,160,89,0.15)]"
-                        : "bg-olq-card border-olq-border hover:border-olq-gold/30 hover:bg-olq-card/80"
+                      "px-4 py-4 rounded-xl border text-center transition-all duration-200",
+                      entryTypes.includes(entry)
+                        ? "bg-olq-gold/10 border-olq-gold/50 shadow-[0_0_15px_rgba(197,160,89,0.15)]"
+                        : "bg-olq-card border-olq-border hover:border-olq-gold/30"
                     )}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <span className={cn(
-                        "text-xl font-bold font-display tracking-wider",
-                        entryType === entry.id ? "text-olq-gold" : "text-white"
-                      )}>
-                        {entry.title}
-                      </span>
-                      {entryType === entry.id && <CheckCircle2 className="w-5 h-5 text-olq-gold" />}
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <span className={cn("text-sm font-bold font-display tracking-wider", entryTypes.includes(entry) ? "text-olq-gold" : "text-white")}>{entry}</span>
+                      {entryTypes.includes(entry) && <CheckCircle2 className="w-4 h-4 text-olq-gold" />}
                     </div>
-                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">{entry.subtitle}</p>
-                    <p className="text-xs text-gray-500">{entry.desc}</p>
+                  </button>
+                ))}
+              </div>
+              {entryTypes.length > 0 && (
+                <p className="text-center text-[10px] text-olq-gold/60 font-mono">{entryTypes.length} selected</p>
+              )}
+            </motion.div>
+          )}
+
+          {/* Step 1: SSB Stage */}
+          {step === 1 && (
+            <motion.div key="step1" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
+                  <Users className="text-olq-gold w-7 h-7" />
+                </div>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">SSB Preparation Stage</h2>
+                <p className="text-xs text-gray-400">What stage are you at in SSB preparation?</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {SSB_STAGES.map((stage) => (
+                  <button
+                    key={stage.id}
+                    onClick={() => setSsbStage(stage.id)}
+                    className={cn(
+                      "px-5 py-4 rounded-xl border text-left transition-all duration-200 flex items-center gap-3",
+                      ssbStage === stage.id
+                        ? "bg-olq-gold/10 border-olq-gold/50 shadow-[0_0_15px_rgba(197,160,89,0.15)]"
+                        : "bg-olq-card border-olq-border hover:border-olq-gold/30"
+                    )}
+                  >
+                    {ssbStage === stage.id ? <CheckCircle2 className="w-4 h-4 text-olq-gold shrink-0" /> : <div className="w-4 h-4 rounded-full border border-gray-600 shrink-0" />}
+                    <span className={cn("text-sm font-bold", ssbStage === stage.id ? "text-olq-gold" : "text-white")}>{stage.label}</span>
                   </button>
                 ))}
               </div>
             </motion.div>
           )}
 
-          {/* Step 1: Attempt History */}
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="space-y-8"
-            >
+          {/* Step 2: Personal Info (Age + City) */}
+          {step === 2 && (
+            <motion.div key="step2" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
               <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
-                  <Target className="text-olq-gold w-8 h-8" />
+                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
+                  <MapPin className="text-olq-gold w-7 h-7" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white uppercase tracking-wider font-display">Attempt History</h1>
-                <p className="text-sm text-gray-400">Share your SSB background so we can tailor your plan.</p>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">Personal Details</h2>
+                <p className="text-xs text-gray-400">Basic information for your PIQ profile.</p>
               </div>
 
-              <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-6">
+              <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-5">
                 <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Previous SSB Attempts</label>
-                  <div className="flex items-center gap-4">
-                    <button onClick={() => setPreviousAttempts(Math.max(0, previousAttempts - 1))} className="w-10 h-10 rounded-lg bg-olq-bg border border-olq-border flex items-center justify-center text-white text-xl hover:border-olq-gold/40 transition-colors">−</button>
-                    <span className="text-3xl font-bold font-mono text-white w-12 text-center">{previousAttempts}</span>
-                    <button onClick={() => setPreviousAttempts(previousAttempts + 1)} className="w-10 h-10 rounded-lg bg-olq-bg border border-olq-border flex items-center justify-center text-white text-xl hover:border-olq-gold/40 transition-colors">+</button>
-                  </div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 block font-display">Age *</label>
+                  <input
+                    type="number"
+                    min="14"
+                    max="40"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    placeholder="Enter your age"
+                    className="w-full bg-olq-bg border border-olq-border rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
+                  />
                 </div>
-
                 <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Best Result So Far</label>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 block font-display">City of Residence *</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="Enter your city"
+                    className="w-full bg-olq-bg border border-olq-border rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Education */}
+          {step === 3 && (
+            <motion.div key="step3" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
+                  <GraduationCap className="text-olq-gold w-7 h-7" />
+                </div>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">Education</h2>
+                <p className="text-xs text-gray-400">Your academic background.</p>
+              </div>
+
+              <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-5">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Highest Level of Education *</label>
                   <div className="grid grid-cols-2 gap-3">
-                    {CONFERENCE_OPTIONS.map((opt) => (
+                    {EDUCATION_LEVELS.map((edu) => (
                       <button
-                        key={opt.id}
-                        onClick={() => setConferenceStatus(opt.id as any)}
+                        key={edu}
+                        onClick={() => setEducation(edu)}
                         className={cn(
-                          "px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border text-left",
-                          conferenceStatus === opt.id
+                          "px-4 py-3 rounded-lg text-sm font-bold transition-all border",
+                          education === edu
                             ? "bg-olq-gold/10 border-olq-gold/40 text-olq-gold"
                             : "bg-olq-bg border-olq-border text-gray-400 hover:border-olq-gold/20"
                         )}
                       >
-                        {opt.label}
+                        {edu}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 block font-display">College / School Name <span className="text-gray-700">(Optional)</span></label>
+                  <input
+                    type="text"
+                    value={collegeName}
+                    onChange={(e) => setCollegeName(e.target.value)}
+                    placeholder="Enter your institution name"
+                    className="w-full bg-olq-bg border border-olq-border rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2 block font-display">Passout Year <span className="text-gray-700">(Optional)</span></label>
+                  <input
+                    type="number"
+                    min="2000"
+                    max="2035"
+                    value={passoutYear}
+                    onChange={(e) => setPassoutYear(e.target.value)}
+                    placeholder="e.g., 2025"
+                    className="w-full bg-olq-bg border border-olq-border rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 4: NCC */}
+          {step === 4 && (
+            <motion.div key="step4" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
+                  <Shield className="text-olq-gold w-7 h-7" />
+                </div>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">NCC Background</h2>
+                <p className="text-xs text-gray-400">Are you part of NCC (National Cadet Corps)?</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
+                <button
+                  onClick={() => setIsNCC(true)}
+                  className={cn(
+                    "py-6 rounded-xl border text-center transition-all duration-200",
+                    isNCC === true
+                      ? "bg-olq-green/10 border-olq-green/50 shadow-[0_0_20px_rgba(132,141,98,0.2)]"
+                      : "bg-olq-card border-olq-border hover:border-olq-green/30"
+                  )}
+                >
+                  <span className={cn("text-xl font-bold font-display", isNCC === true ? "text-olq-green" : "text-white")}>Yes</span>
+                </button>
+                <button
+                  onClick={() => setIsNCC(false)}
+                  className={cn(
+                    "py-6 rounded-xl border text-center transition-all duration-200",
+                    isNCC === false
+                      ? "bg-red-500/10 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.1)]"
+                      : "bg-olq-card border-olq-border hover:border-red-500/30"
+                  )}
+                >
+                  <span className={cn("text-xl font-bold font-display", isNCC === false ? "text-red-400" : "text-white")}>No</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 5: Struggle Areas + Daily Hours */}
+          {step === 5 && (
+            <motion.div key="step5" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
+              <div className="text-center space-y-3">
+                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
+                  <AlertTriangle className="text-olq-gold w-7 h-7" />
+                </div>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">Your Challenges</h2>
+                <p className="text-xs text-gray-400">Help us understand your focus areas.</p>
+              </div>
+
+              <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-6">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Which area do you struggle with the most? * <span className="text-olq-gold/60">(Multiple select)</span></label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {STRUGGLE_AREAS.map((area) => (
+                      <button
+                        key={area}
+                        onClick={() => toggleStruggle(area)}
+                        className={cn(
+                          "px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all border text-left flex items-center gap-2",
+                          struggleAreas.includes(area)
+                            ? "bg-olq-gold/10 border-olq-gold/40 text-olq-gold"
+                            : "bg-olq-bg border-olq-border text-gray-400 hover:border-olq-gold/20"
+                        )}
+                      >
+                        {struggleAreas.includes(area) ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <div className="w-3 h-3 rounded border border-gray-600 shrink-0" />}
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">How many hours can you dedicate daily? *</label>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                    {DAILY_HOURS_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setDailyHours(opt)}
+                        className={cn(
+                          "px-3 py-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all border text-center",
+                          dailyHours === opt
+                            ? "bg-olq-gold/10 border-olq-gold/40 text-olq-gold"
+                            : "bg-olq-bg border-olq-border text-gray-400 hover:border-olq-gold/20"
+                        )}
+                      >
+                        {opt}
                       </button>
                     ))}
                   </div>
@@ -182,67 +358,15 @@ export default function OnboardingFlow() {
             </motion.div>
           )}
 
-          {/* Step 2: Target & Motivation */}
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="space-y-8"
-            >
+          {/* Step 6: OLQ Self Assessment */}
+          {step === 6 && (
+            <motion.div key="step6" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
               <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
-                  <Calendar className="text-olq-gold w-8 h-8" />
+                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
+                  <Crosshair className="text-olq-gold w-7 h-7" />
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white uppercase tracking-wider font-display">Your Target</h1>
-                <p className="text-sm text-gray-400">Set your SSB date and define your mission.</p>
-              </div>
-
-              <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-6">
-                <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Target SSB Date</label>
-                  <input
-                    type="date"
-                    value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
-                    className="w-full bg-olq-bg border border-olq-border rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors"
-                  />
-                  {targetDate && (
-                    <p className="text-xs text-olq-gold mt-2 font-mono">
-                      {Math.max(0, Math.floor((new Date(targetDate).getTime() - Date.now()) / 86400000))} days remaining
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Why do you want to join the forces? (Optional)</label>
-                  <textarea
-                    value={motivation}
-                    onChange={(e) => setMotivation(e.target.value)}
-                    placeholder="Your motivation drives your preparation..."
-                    className="w-full bg-olq-bg border border-olq-border rounded-lg px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors resize-none min-h-[100px] placeholder:text-gray-700"
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 3: Self Assessment */}
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              className="space-y-8"
-            >
-              <div className="text-center space-y-3">
-                <div className="w-16 h-16 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
-                  <Crosshair className="text-olq-gold w-8 h-8" />
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-white uppercase tracking-wider font-display">Self Assessment</h1>
-                <p className="text-sm text-gray-400">Rate yourself honestly on each OLQ. This helps us find your focus areas.</p>
+                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">Self Assessment</h2>
+                <p className="text-xs text-gray-400">Rate yourself honestly on each OLQ. This helps us find your focus areas.</p>
               </div>
 
               <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-4 max-h-[50vh] overflow-y-auto">
