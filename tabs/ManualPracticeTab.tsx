@@ -1,25 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, RefreshCw, Play, Square, Brain } from 'lucide-react';
+import { Clock, RefreshCw, Play, Square, Brain, Download } from 'lucide-react';
 import { cn } from '../utils';
 
 type Protocol = 'WAT' | 'TAT' | 'SRT';
 
-const sampleWords = ["Accept", "Danger", "Delay", "Defeat", "Failure", "Blood", "Death", "Impossible", "Weapon", "Enemy"];
+const sampleWords = [
+  "Accept", "Danger", "Delay", "Defeat", "Failure", "Blood", "Death", "Impossible", 
+  "Weapon", "Enemy", "Courage", "Family", "Duty", "Sacrifice", "Attack", "Leader", 
+  "System", "Officer", "Problem", "Command", "Strategy", "Victory"
+];
+
+// Placeholder TAT images (waiting for Admin configuration)
 const sampleImages = [
   "https://images.unsplash.com/photo-1542204165-65bf26472b9b?auto=format&fit=crop&q=80&w=800",
-  "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=800"
+  "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800",
+  "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=800"
 ];
+
 const sampleSituations = [
   "He was given a task which he found impossible to complete within the time frame.",
   "His subordinates refused to follow his orders during a critical operation.",
-  "He saw a venomous snake entering his colleague's sleeping bag."
+  "He saw a venomous snake entering his colleague's sleeping bag.",
+  "You are traveling in a train and notice a suspicious unattended bag under a seat.",
+  "While patrolling, his patrol gets ambushed and communication with HQ is lost.",
+  "He accidentally spills coffee on his commander's important documents right before a meeting.",
+  "He is preparing for finals but suddenly his roommate falls severely ill at midnight."
 ];
+
+function shuffleArray<T>(array: T[]): T[] {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+}
 
 export default function ManualPracticeTab() {
   const [protocol, setProtocol] = useState<Protocol>('WAT');
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [activeList, setActiveList] = useState<string[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Time limits per item
   const timeLimits = {
@@ -42,8 +66,7 @@ export default function ManualPracticeTab() {
   }, [isActive, timeLeft]);
 
   const handleNext = () => {
-    const list = getCurrentList();
-    if (currentIndex < list.length - 1) {
+    if (currentIndex < activeList.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setTimeLeft(timeLimits[protocol]);
     } else {
@@ -51,8 +74,8 @@ export default function ManualPracticeTab() {
     }
   };
 
-  const getCurrentList = () => {
-    switch (protocol) {
+  const getBaseList = (p: Protocol) => {
+    switch (p) {
       case 'WAT': return sampleWords;
       case 'TAT': return sampleImages;
       case 'SRT': return sampleSituations;
@@ -60,6 +83,9 @@ export default function ManualPracticeTab() {
   };
 
   const handleStart = () => {
+    // Randomize the active list on START
+    const baseList = getBaseList(protocol);
+    setActiveList(shuffleArray(baseList));
     setCurrentIndex(0);
     setTimeLeft(timeLimits[protocol]);
     setIsActive(true);
@@ -69,8 +95,29 @@ export default function ManualPracticeTab() {
     setIsActive(false);
   };
 
-  const currentList = getCurrentList();
-  const currentItem = currentList[currentIndex];
+  const downloadImage = async (url: string) => {
+    try {
+      setIsDownloading(true);
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `TAT_Stimulus_${currentIndex + 1}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Failed to download image:", err);
+      // Fallback method
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const currentItem = activeList.length > 0 ? activeList[currentIndex] : '';
 
   return (
     <div className="bg-olq-bg border border-olq-border rounded-xl flex flex-col min-h-[70vh] animate-in fade-in duration-500 overflow-hidden shadow-2xl">
@@ -139,11 +186,13 @@ export default function ManualPracticeTab() {
 
         {/* Display Panel */}
         <div className="flex-1 p-8 flex flex-col items-center justify-center relative">
-          <div className="absolute top-6 left-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest font-display">
-            Item {currentIndex + 1} of {currentList.length}
-          </div>
+          {isActive && (
+            <div className="absolute top-6 left-6 text-[10px] font-bold text-gray-500 uppercase tracking-widest font-display">
+              Item {currentIndex + 1} of {activeList.length}
+            </div>
+          )}
 
-          <div className="w-full max-w-2xl mx-auto flex items-center justify-center min-h-[300px]">
+          <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[300px] gap-6">
             {!isActive ? (
               <div className="text-center space-y-4 text-gray-500">
                 <RefreshCw className="w-12 h-12 mx-auto opacity-20" />
@@ -151,13 +200,25 @@ export default function ManualPracticeTab() {
               </div>
             ) : (
               protocol === 'TAT' ? (
-                <img 
-                  src={currentItem} 
-                  alt="TAT Stimulus" 
-                  className="max-w-full max-h-[400px] object-contain rounded-lg border border-olq-border shadow-2xl"
-                />
+                <div className="relative group w-full flex flex-col items-center">
+                  <img 
+                    src={currentItem} 
+                    alt="TAT Stimulus" 
+                    className="max-w-full max-h-[400px] object-contain rounded-lg border border-olq-border shadow-2xl"
+                  />
+                  <div className="mt-6 flex justify-end w-full max-w-md">
+                    <button 
+                      onClick={() => downloadImage(currentItem)}
+                      disabled={isDownloading}
+                      className="flex items-center gap-2 px-4 py-2 bg-olq-gold/10 border border-olq-gold/30 rounded-lg text-[10px] font-bold text-olq-gold uppercase tracking-widest hover:bg-olq-gold/20 transition-all disabled:opacity-50"
+                    >
+                      <Download className="w-3 h-3" />
+                      {isDownloading ? 'Downloading...' : 'Download Image'}
+                    </button>
+                  </div>
+                </div>
               ) : protocol === 'WAT' ? (
-                <h1 className="text-6xl sm:text-8xl font-bold text-white tracking-wider font-display drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                <h1 className="text-6xl sm:text-8xl font-bold text-white tracking-wider font-display drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] text-center break-words max-w-full">
                   {currentItem}
                 </h1>
               ) : (

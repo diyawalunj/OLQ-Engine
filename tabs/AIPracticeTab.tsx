@@ -34,6 +34,9 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
+import { useAuthStore } from '../stores/authStore';
+import { db } from '../firebaseConfig';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -262,6 +265,23 @@ export default function AIPracticeTab() {
       const data = await analyzeResponses(protocol, finalResponses, image || undefined);
       setResult(data);
       setStatus('complete');
+      
+      try {
+        const { user } = useAuthStore.getState();
+        if (user && db.app.options.apiKey !== 'mock_api_key') {
+          await addDoc(collection(db, 'assessments'), {
+             uid: user.uid,
+             date: serverTimestamp(),
+             protocol,
+             readinessScore: data.readinessScore,
+             realismScore: data.realismScore,
+             overallAssessment: data.overallAssessment,
+             summary: data.summary
+          });
+        }
+      } catch (err) {
+        console.error("Failed to save assessment to history", err);
+      }
       
       // Auto-scroll to results
       setTimeout(() => {

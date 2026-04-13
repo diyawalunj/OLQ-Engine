@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 interface User {
   uid: string;
-  phoneNumber: string;
+  email: string;
   isAdmin: boolean;
 }
 

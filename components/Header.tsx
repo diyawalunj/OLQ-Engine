@@ -63,7 +63,7 @@ export default function Header({ currentTab, setTab }: HeaderProps) {
       <div className="flex items-center gap-4 shrink-0 justify-end w-full md:w-auto">
         <div className="text-right hidden sm:block">
           <span className="text-[9px] font-bold text-gray-500 uppercase tracking-[0.2em] block font-display">Logged In</span>
-          <span className="text-xs font-mono text-olq-gold">{user?.phoneNumber}</span>
+          <span className="text-xs font-mono text-olq-gold">{user?.email || 'Admin'}</span>
         </div>
         <button 
           onClick={logout}
