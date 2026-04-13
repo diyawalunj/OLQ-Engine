@@ -276,7 +276,10 @@ export default function AIPracticeTab() {
              readinessScore: data.readinessScore,
              realismScore: data.realismScore,
              overallAssessment: data.overallAssessment,
-             summary: data.summary
+             summary: data.summary,
+             olqScores: data.olqWiseAnalysis.map(o => ({ name: o.name, score: o.score })),
+             strengths: data.strengths,
+             weaknesses: data.weaknesses,
           });
         }
       } catch (err) {
