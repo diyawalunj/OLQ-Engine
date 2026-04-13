@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { Shield, Mail, Lock, Loader2, ArrowRight, UserPlus } from 'lucide-react';
+import { Shield, Mail, Lock, Loader2, ArrowRight, UserPlus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebaseConfig';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, setUser, isLoading, setLoading } = useAuthStore();
+  const { user, setUser, isLoading, setLoading, showAuthModal, setShowAuthModal } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
@@ -21,6 +21,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           email: user.email || '',
           isAdmin: user.email === 'diyawalunj@gmail.com'
         });
+        setShowAuthModal(false); // Close modal on successful login
       } else {
         setUser(null);
       }
@@ -28,7 +29,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [setUser, setLoading]);
+  }, [setUser, setLoading, setShowAuthModal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +46,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
               email: email,
               isAdmin: email === 'diyawalunj@gmail.com'
             });
+            setShowAuthModal(false);
             setIsProcessing(false);
           }, 1000);
           return;
@@ -58,6 +60,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
               email: email,
               isAdmin: email === 'diyawalunj@gmail.com'
             });
+            setShowAuthModal(false);
             setIsProcessing(false);
           }, 1000);
           return;
@@ -78,101 +81,111 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-olq-bg flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-olq-gold animate-spin" />
-      </div>
-    );
-  }
-
-  if (user) {
-    return <>{children}</>;
-  }
-
   return (
-    <div className="min-h-screen bg-olq-bg flex flex-col items-center justify-center p-4 selection:bg-olq-gold/30">
-      <div className="w-full max-w-md bg-olq-card border border-olq-border rounded-xl p-8 shadow-2xl relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-olq-gold/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-olq-olive/10 blur-[100px] -ml-32 -mb-32 pointer-events-none" />
-        
-        <div className="relative z-10 text-center mb-8">
-          <div className="w-16 h-16 bg-olq-olive rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20 mb-6 shadow-[0_0_30px_rgba(61,68,30,0.5)]">
-            <Shield className="text-olq-gold w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold text-white uppercase tracking-wider font-display mb-2">SSB Portal</h1>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] font-display">
-            {isLogin ? 'Secure Login' : 'Create Account'}
-          </p>
-        </div>
+    <>
+      {/* Always render the application underneath */}
+      {children}
 
-        <motion.form 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          onSubmit={handleSubmit}
-          className="space-y-6 relative z-10"
-        >
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Email Address</label>
-            <div className="relative">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="candidate@example.com"
-                className="w-full bg-olq-bg border border-olq-border rounded-lg pl-12 pr-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
-                required
-              />
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Password</label>
-            <div className="relative">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-olq-bg border border-olq-border rounded-lg pl-12 pr-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
-                required
-                minLength={6}
-              />
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-            </div>
-          </div>
-
-          {error && <p className="text-red-500 text-xs text-center">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={isProcessing || !email || password.length < 6}
-            className="w-full py-4 rounded-lg font-bold uppercase tracking-[0.2em] text-[11px] transition-all flex items-center justify-center gap-3 font-display bg-olq-olive text-white hover:bg-olq-olive/90 disabled:opacity-50 disabled:cursor-not-allowed border border-olq-gold/20 hover:border-olq-gold/50 shadow-[0_0_20px_rgba(61,68,30,0.3)]"
+      <AnimatePresence>
+        {!user && showAuthModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-4 selection:bg-olq-gold/30"
           >
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : (isLogin ? 'Grant Access' : 'Register Profile')}
-            {!isProcessing && <ArrowRight className="w-4 h-4" />}
-          </button>
-        </motion.form>
+            <div className="w-full max-w-md bg-olq-card border border-olq-border rounded-xl p-8 shadow-2xl relative overflow-hidden">
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowAuthModal(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors z-20"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-        <div className="relative z-10 mt-6 text-center">
-          <button 
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError(null);
-            }} 
-            className="text-[10px] text-olq-gold/60 hover:text-olq-gold font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 mx-auto"
-          >
-             {isLogin ? (
-               <><UserPlus className="w-3 h-3" /> Initialize New Candidate Profile</>
-             ) : (
-               <><Shield className="w-3 h-3" /> Authenticate Existing Profile</>
-             )}
-          </button>
-        </div>
-      </div>
-    </div>
+              {/* Glow Effects */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-olq-gold/5 blur-[100px] -mr-32 -mt-32 pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-olq-olive/10 blur-[100px] -ml-32 -mb-32 pointer-events-none" />
+              
+              <div className="relative z-10 text-center mb-8">
+                <div className="w-16 h-16 bg-olq-olive rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20 mb-6 shadow-[0_0_30px_rgba(61,68,30,0.5)]">
+                  <Shield className="text-olq-gold w-8 h-8" />
+                </div>
+                <h1 className="text-2xl font-bold text-white uppercase tracking-wider font-display mb-2">SSB Portal</h1>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] font-display">
+                  {isLogin ? 'Secure Login to Access Feature' : 'Create Profile to Access Feature'}
+                </p>
+              </div>
+
+              <motion.form 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onSubmit={handleSubmit}
+                className="space-y-6 relative z-10"
+              >
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Email Address</label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="candidate@example.com"
+                      className="w-full bg-olq-bg border border-olq-border rounded-lg pl-12 pr-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
+                      required
+                    />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3 block font-display">Password</label>
+                  <div className="relative">
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-olq-bg border border-olq-border rounded-lg pl-12 pr-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-olq-gold/40 transition-colors placeholder:text-gray-700"
+                      required
+                      minLength={6}
+                    />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  </div>
+                </div>
+
+                {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+
+                <button
+                  type="submit"
+                  disabled={isProcessing || !email || password.length < 6}
+                  className="w-full py-4 rounded-lg font-bold uppercase tracking-[0.2em] text-[11px] transition-all flex items-center justify-center gap-3 font-display bg-olq-olive text-white hover:bg-olq-olive/90 disabled:opacity-50 disabled:cursor-not-allowed border border-olq-gold/20 hover:border-olq-gold/50 shadow-[0_0_20px_rgba(61,68,30,0.3)]"
+                >
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : (isLogin ? 'Grant Access' : 'Register Profile')}
+                  {!isProcessing && <ArrowRight className="w-4 h-4" />}
+                </button>
+              </motion.form>
+
+              <div className="relative z-10 mt-6 text-center">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError(null);
+                  }} 
+                  className="text-[10px] text-olq-gold/60 hover:text-olq-gold font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 mx-auto"
+                >
+                   {isLogin ? (
+                     <><UserPlus className="w-3 h-3" /> Initialize New Candidate Profile</>
+                   ) : (
+                     <><Shield className="w-3 h-3" /> Authenticate Existing Profile</>
+                   )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, RefreshCw, Play, Square, Brain, Download } from 'lucide-react';
 import { cn } from '../utils';
+import { useAuthStore } from '../stores/authStore';
 
 type Protocol = 'WAT' | 'TAT' | 'SRT';
 
@@ -45,6 +46,8 @@ export default function ManualPracticeTab() {
   const [activeList, setActiveList] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
 
+  const { user, setShowAuthModal } = useAuthStore();
+
   // Time limits per item
   const timeLimits = {
     WAT: 15,
@@ -83,6 +86,10 @@ export default function ManualPracticeTab() {
   };
 
   const handleStart = () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     // Randomize the active list on START
     const baseList = getBaseList(protocol);
     setActiveList(shuffleArray(baseList));

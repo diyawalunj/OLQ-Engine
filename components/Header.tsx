@@ -45,7 +45,13 @@ export default function Header({ currentTab, setTab }: HeaderProps) {
           return (
             <button
               key={tab.id}
-              onClick={() => setTab(tab.id)}
+              onClick={() => {
+                if (!user && tab.id !== 'MANUAL') {
+                  useAuthStore.getState().setShowAuthModal(true);
+                } else {
+                  setTab(tab.id);
+                }
+              }}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all font-display whitespace-nowrap",
                 isActive 
