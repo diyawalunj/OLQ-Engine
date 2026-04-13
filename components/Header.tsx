@@ -18,7 +18,6 @@ const NAV_SECTIONS = [
     title: 'Command',
     items: [
       { id: 'ROADMAP', label: 'Roadmap', icon: Map },
-      { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {

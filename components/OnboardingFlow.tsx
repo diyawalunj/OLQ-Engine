@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, ChevronRight, ChevronLeft, CheckCircle2, Crosshair, Sparkles, GraduationCap, MapPin, Clock, AlertTriangle, Users } from 'lucide-react';
-import { useOnboardingStore, OLQ_LIST, UserProfile, ENTRY_TYPES, SSB_STAGES, EDUCATION_LEVELS, STRUGGLE_AREAS, DAILY_HOURS_OPTIONS } from '../stores/onboardingStore';
+import { Shield, ChevronRight, ChevronLeft, CheckCircle2, Sparkles, GraduationCap, MapPin, Clock, AlertTriangle, Users } from 'lucide-react';
+import { useOnboardingStore, UserProfile, ENTRY_TYPES, SSB_STAGES, EDUCATION_LEVELS, STRUGGLE_AREAS, DAILY_HOURS_OPTIONS } from '../stores/onboardingStore';
 import { useAuthStore } from '../stores/authStore';
 import { cn } from '../utils';
 
@@ -20,12 +20,9 @@ export default function OnboardingFlow() {
   const [isNCC, setIsNCC] = useState<boolean | null>(null);
   const [struggleAreas, setStruggleAreas] = useState<string[]>([]);
   const [dailyHours, setDailyHours] = useState('');
-  const [selfAssessment, setSelfAssessment] = useState<Record<string, number>>(
-    Object.fromEntries(OLQ_LIST.map(olq => [olq, 5]))
-  );
   const [isSaving, setIsSaving] = useState(false);
 
-  const totalSteps = 7;
+  const totalSteps = 6;
 
   const toggleEntry = (entry: string) => {
     setEntryTypes(prev => prev.includes(entry) ? prev.filter(e => e !== entry) : [...prev, entry]);
@@ -43,7 +40,6 @@ export default function OnboardingFlow() {
       case 3: return education !== '';
       case 4: return isNCC !== null;
       case 5: return struggleAreas.length > 0 && dailyHours !== '';
-      case 6: return true;
       default: return false;
     }
   };
@@ -63,7 +59,7 @@ export default function OnboardingFlow() {
       isNCC: isNCC ?? false,
       struggleAreas,
       dailyHours,
-      selfAssessment,
+      selfAssessment: {},
       onboardingComplete: true,
       createdAt: new Date().toISOString(),
     };
@@ -358,45 +354,7 @@ export default function OnboardingFlow() {
             </motion.div>
           )}
 
-          {/* Step 6: OLQ Self Assessment */}
-          {step === 6 && (
-            <motion.div key="step6" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="space-y-6">
-              <div className="text-center space-y-3">
-                <div className="w-14 h-14 bg-olq-olive/50 rounded-xl mx-auto flex items-center justify-center border border-olq-gold/20">
-                  <Crosshair className="text-olq-gold w-7 h-7" />
-                </div>
-                <h2 className="text-xl font-bold text-white uppercase tracking-wider font-display">Self Assessment</h2>
-                <p className="text-xs text-gray-400">Rate yourself honestly on each OLQ. This helps us find your focus areas.</p>
-              </div>
 
-              <div className="bg-olq-card border border-olq-border rounded-xl p-6 space-y-4 max-h-[50vh] overflow-y-auto">
-                {OLQ_LIST.map((olq) => (
-                  <div key={olq} className="flex items-center justify-between gap-4 py-3 border-b border-olq-border/50 last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-white truncate">{olq}</p>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <input
-                        type="range"
-                        min={1}
-                        max={10}
-                        value={selfAssessment[olq]}
-                        onChange={(e) => setSelfAssessment({ ...selfAssessment, [olq]: parseInt(e.target.value) })}
-                        className="w-24 sm:w-32 accent-olq-gold appearance-none h-1 bg-gray-700 rounded-full cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-olq-gold [&::-webkit-slider-thumb]:cursor-pointer"
-                      />
-                      <span className={cn(
-                        "text-sm font-bold font-mono w-6 text-right",
-                        selfAssessment[olq] >= 8 ? "text-olq-green" :
-                        selfAssessment[olq] >= 5 ? "text-olq-gold" : "text-red-500"
-                      )}>
-                        {selfAssessment[olq]}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
         </AnimatePresence>
 
         {/* Navigation Buttons */}
